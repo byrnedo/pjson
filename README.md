@@ -30,7 +30,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-  fmt.Println(items)
+	fmt.Println(items)
 
 }
 ```
