@@ -16,9 +16,16 @@ type Typer interface{ Type() string }
 
 type Config[T Typer] struct {
 	TagField string
+	Variants []T
 }
 
-func (c Config[T]) Unmarshal(bytes []byte, variant1 T, variants ...T) (items []T, err error) {
+func New[T Typer](variants []T) Config[T] {
+	return Config[T]{
+		Variants: variants,
+	}
+}
+
+func (c Config[T]) Unmarshal(bytes []byte) (items []T, err error) {
 	if c.TagField == "" {
 		c.TagField = DefaultTagField
 	}
@@ -43,7 +50,7 @@ func (c Config[T]) Unmarshal(bytes []byte, variant1 T, variants ...T) (items []T
 			return nil, fmt.Errorf("failed to find tag field `%s` in json object", c.TagField)
 		}
 
-		item, err := magic[T](tag, []byte(jRes.Raw), variant1, variants...)
+		item, err := magic[T](tag, []byte(jRes.Raw), c.Variants[0], c.Variants...)
 		if err != nil {
 			return nil, fmt.Errorf("[%d]: %w", i, err)
 		}
