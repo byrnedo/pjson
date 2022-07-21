@@ -25,12 +25,12 @@ func (b B) Type() string {
 
 func main() {
 
-	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
-	items, err := Unmarshal[MyFace](bytes, A{}, B{})
-	if err != nil {
-		panic(err)
-	}
-	fmt.Println(items)
+    bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
+    items, err := New([]MyFace{A{}, B{}}).Unmarshal(bytes)
+    if err != nil {
+        t.Fatal(err)
+    }
+    fmt.Println(items)
 
 }
 ```
