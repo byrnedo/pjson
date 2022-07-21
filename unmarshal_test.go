@@ -27,7 +27,7 @@ func (b B) Type() string {
 
 func TestSomething(t *testing.T) {
 
-	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}, {"type": "c"}]`)
+	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
 	items, err := Unmarshal[MyFace](bytes, A{}, B{})
 	if err != nil {
 		t.Fatal(err)
