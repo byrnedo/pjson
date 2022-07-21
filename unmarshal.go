@@ -14,18 +14,18 @@ const (
 
 type Typer interface{ Type() string }
 
-type Config[T Typer] struct {
+type Pjson[T Typer] struct {
 	TagField string
 	Variants []T
 }
 
-func New[T Typer](variants []T) Config[T] {
-	return Config[T]{
+func New[T Typer](variants []T) Pjson[T] {
+	return Pjson[T]{
 		Variants: variants,
 	}
 }
 
-func (c Config[T]) Unmarshal(bytes []byte) (items []T, err error) {
+func (c Pjson[T]) Unmarshal(bytes []byte) (items []T, err error) {
 	if c.TagField == "" {
 		c.TagField = DefaultTagField
 	}
