@@ -3,7 +3,15 @@
 Help to unmarshal tagged unions in go
 
 ```go
+package main
+
+import (
+	"github.com/byrnedo/pjson"
+	"fmt"
+)
+
 type MyFace interface {
+	// Type func is required
 	Type() string
 }
 
@@ -25,12 +33,18 @@ func (b B) Type() string {
 
 func main() {
 
-    bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
-    items, err := New([]MyFace{A{}, B{}}).Unmarshal(bytes)
-    if err != nil {
-        t.Fatal(err)
-    }
-    fmt.Println(items)
+	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
+	items, err := pjson.New([]MyFace{A{}, B{}}).UnmarshalArray(bytes)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(items)
 
+	bytes = []byte(`{"type": "a", "a": "AAA"}`)
+	item, err := pjson.New([]MyFace{A{}, B{}}).UnmarshalObject(bytes)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(item)
 }
 ```
