@@ -1,6 +1,7 @@
 package pjson_test
 
 import (
+	"encoding/json"
 	"reflect"
 	"testing"
 
@@ -89,4 +90,26 @@ func TestObjectNotObject(t *testing.T) {
 	}
 
 	t.Log(err)
+}
+
+func TestPjson_MarshalObject(t *testing.T) {
+	b, err := pjson.New([]ABFace{}).MarshalObject(A{A: "AAA"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !json.Valid(b) {
+		t.Fatal("json invalid")
+	}
+	t.Log(string(b))
+}
+
+func TestPjson_MarshalArray(t *testing.T) {
+	b, err := pjson.New([]ABFace{}).MarshalArray([]ABFace{A{A: "AA0"}, A{A: "AA1"}, A{A: "AA2"}, B{B: "BB0"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !json.Valid(b) {
+		t.Fatal("json invalid")
+	}
+	t.Log(string(b))
 }

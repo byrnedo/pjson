@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/tidwall/gjson"
+	"github.com/tidwall/sjson"
 )
 
 const (
@@ -104,4 +105,28 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 func (c Pjson[T]) UnmarshalObject(bytes []byte) (T, error) {
 	gj := gjson.ParseBytes(bytes)
 	return c.unmarshalObjectGjson(gj)
+}
+
+func (c Pjson[T]) MarshalArray(items []T) (bytes []byte, err error) {
+	var singleObjBytes []string
+	for i, item := range items {
+		b, err := c.MarshalObject(item)
+		if err != nil {
+			return nil, fmt.Errorf("failed to marshal items[%d]: %w", i, err)
+		}
+		singleObjBytes = append(singleObjBytes, string(b))
+	}
+	return []byte("[" + strings.Join(singleObjBytes, ",") + "]"), nil
+}
+
+func (c Pjson[T]) MarshalObject(item T) (bytes []byte, err error) {
+
+	variant := item.Variant()
+
+	b, err := json.Marshal(item)
+	if err != nil {
+		return nil, err
+	}
+
+	return sjson.SetBytes(b, c.VariantField, variant)
 }
