@@ -25,10 +25,14 @@ func New[T Typer](variants []T) Pjson[T] {
 	}
 }
 
-func (c Pjson[T]) Unmarshal(bytes []byte) (items []T, err error) {
+func (c Pjson[T]) tagField() string {
 	if c.TagField == "" {
-		c.TagField = DefaultTagField
+		return DefaultTagField
 	}
+	return c.TagField
+}
+
+func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
 
 	gj := gjson.ParseBytes(bytes)
 	if !gj.IsArray() {
@@ -36,21 +40,8 @@ func (c Pjson[T]) Unmarshal(bytes []byte) (items []T, err error) {
 	}
 	results := gj.Array()
 	for i, jRes := range results {
-		if !jRes.IsObject() {
-			jType := jRes.Type.String()
-			if jType == gjson.JSON.String() {
-				if jRes.IsArray() {
-					jType = "Array"
-				}
-			}
-			return nil, fmt.Errorf("[%d] did not hold an Object, was %s", i, jType)
-		}
-		tag := jRes.Get(c.TagField).String()
-		if tag == "" {
-			return nil, fmt.Errorf("failed to find tag field `%s` in json object", c.TagField)
-		}
 
-		item, err := magic[T](tag, []byte(jRes.Raw), c.Variants[0], c.Variants...)
+		item, err := c.unmarshalObjectGjson(jRes)
 		if err != nil {
 			return nil, fmt.Errorf("[%d]: %w", i, err)
 		}
@@ -60,18 +51,37 @@ func (c Pjson[T]) Unmarshal(bytes []byte) (items []T, err error) {
 	return
 }
 
-func magic[T Typer](tag string, bytes []byte, variant1 T, variants ...T) (T, error) {
+func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 
-	for _, obj := range append([]T{variant1}, variants...) {
-		if obj.Type() == tag {
+	if !jRes.IsObject() {
+		jType := jRes.Type.String()
+		if jType == gjson.JSON.String() {
+			if jRes.IsArray() {
+				jType = "Array"
+			}
+		}
+		return c.Variants[0], fmt.Errorf("did not hold an Object, was %s", jType)
+	}
+	tagValue := jRes.Get(c.tagField()).String()
+	if tagValue == "" {
+		return c.Variants[0], fmt.Errorf("failed to find tag field `%s` in json object", c.TagField)
+	}
+
+	for _, obj := range c.Variants {
+		if obj.Type() == tagValue {
 			objT := reflect.TypeOf(obj)
 			pv := reflect.New(objT)
-			if err := json.Unmarshal(bytes, pv.Interface()); err != nil {
-				return variant1, fmt.Errorf("failed to unmarshal variant '%s': %w", tag, err)
+			if err := json.Unmarshal([]byte(jRes.Raw), pv.Interface()); err != nil {
+				return c.Variants[0], fmt.Errorf("failed to unmarshal variant '%s': %w", tagValue, err)
 			}
 			return pv.Elem().Interface().(T), nil
 		}
 	}
 
-	return variant1, fmt.Errorf("no variant matched type '%s'", tag)
+	return c.Variants[0], fmt.Errorf("no variant matched type '%s'", tagValue)
+}
+
+func (c Pjson[T]) UnmarshalObject(bytes []byte) (T, error) {
+	gj := gjson.ParseBytes(bytes)
+	return c.unmarshalObjectGjson(gj)
 }
