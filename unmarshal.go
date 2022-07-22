@@ -17,22 +17,34 @@ type Variant interface {
 	Variant() string
 }
 
-type Pjson[T Variant] struct {
+type Options struct {
 	TagField string
+}
+
+type Pjson[T Variant] struct {
+	Options
 	Variants []T
 }
 
-func New[T Variant](variants []T) Pjson[T] {
-	return Pjson[T]{
+type OptionFn func(p *Options)
+
+func New[T Variant](variants []T, options ...OptionFn) Pjson[T] {
+	pj := Pjson[T]{
+		Options: Options{
+			TagField: DefaultTagField,
+		},
 		Variants: variants,
 	}
+	for _, optFn := range options {
+		optFn(&pj.Options)
+	}
+	return pj
 }
 
-func (c Pjson[T]) tagField() string {
-	if c.TagField == "" {
-		return DefaultTagField
+func WithTagField(name string) OptionFn {
+	return func(p *Options) {
+		p.TagField = name
 	}
-	return c.TagField
 }
 
 func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
@@ -65,7 +77,7 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 		}
 		return c.Variants[0], fmt.Errorf("did not hold an Object, was %s", jType)
 	}
-	variantRes := jRes.Get(c.tagField())
+	variantRes := jRes.Get(c.TagField)
 	if !variantRes.Exists() {
 		return c.Variants[0], fmt.Errorf("failed to find variant field `%s` in json object", c.TagField)
 	}
