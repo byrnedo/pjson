@@ -5,15 +5,15 @@ import (
 	"testing"
 )
 
-type MyFace interface {
-	Type() string
+type ABFace interface {
+	Variant() string
 }
 
 type A struct {
 	A string `json:"a"`
 }
 
-func (a A) Type() string {
+func (a A) Variant() string {
 	return "a"
 }
 
@@ -21,13 +21,13 @@ type B struct {
 	B string `json:"b"`
 }
 
-func (b B) Type() string {
+func (b B) Variant() string {
 	return "b"
 }
 
 func TestArray(t *testing.T) {
 	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
-	items, err := New([]MyFace{A{}, B{}}).UnmarshalArray(bytes)
+	items, err := New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +39,7 @@ func TestArray(t *testing.T) {
 
 func TestObjectHappy(t *testing.T) {
 	bytes := []byte(`{"type": "a", "a": "AAA"}`)
-	item, err := New([]MyFace{A{}, B{}}).UnmarshalObject(bytes)
+	item, err := New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +49,7 @@ func TestObjectHappy(t *testing.T) {
 }
 func TestObjectNoTagMatch(t *testing.T) {
 	bytes := []byte(`{"type": "x"}`)
-	_, err := New([]MyFace{A{}, B{}}).UnmarshalObject(bytes)
+	_, err := New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -59,7 +59,7 @@ func TestObjectNoTagMatch(t *testing.T) {
 
 func TestArrayNotArray(t *testing.T) {
 	bytes := []byte(`{"type": "a"}`)
-	_, err := New([]MyFace{A{}, B{}}).UnmarshalArray(bytes)
+	_, err := New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -69,7 +69,7 @@ func TestArrayNotArray(t *testing.T) {
 
 func TestObjectNotObject(t *testing.T) {
 	bytes := []byte(`[{"type": "a"}]`)
-	_, err := New([]MyFace{A{}, B{}}).UnmarshalObject(bytes)
+	_, err := New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}

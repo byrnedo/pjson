@@ -11,15 +11,15 @@ import (
 )
 
 type MyFace interface {
-	// Type func is required
-	Type() string
+	// Variant func is required
+	Variant() string
 }
 
 type A struct {
 	A string `json:"a"`
 }
 
-func (a A) Type() string {
+func (a A) Variant() string {
 	return "a"
 }
 
@@ -27,7 +27,7 @@ type B struct {
 	B string `json:"b"`
 }
 
-func (b B) Type() string {
+func (b B) Variant() string {
 	return "b"
 }
 

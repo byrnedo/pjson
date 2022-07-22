@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
+	"strings"
 
 	"github.com/tidwall/gjson"
 )
@@ -12,14 +13,14 @@ const (
 	DefaultTagField = "type"
 )
 
-type Typer interface{ Type() string }
+type Variant interface{ Variant() string }
 
-type Pjson[T Typer] struct {
+type Pjson[T Variant] struct {
 	TagField string
 	Variants []T
 }
 
-func New[T Typer](variants []T) Pjson[T] {
+func New[T Variant](variants []T) Pjson[T] {
 	return Pjson[T]{
 		Variants: variants,
 	}
@@ -62,13 +63,18 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 		}
 		return c.Variants[0], fmt.Errorf("did not hold an Object, was %s", jType)
 	}
-	tagValue := jRes.Get(c.tagField()).String()
-	if tagValue == "" {
+	tagRes := jRes.Get(c.tagField())
+	if !tagRes.Exists() {
 		return c.Variants[0], fmt.Errorf("failed to find tag field `%s` in json object", c.TagField)
+	}
+	tagValue := strings.TrimSpace(tagRes.String())
+	if tagValue == "" {
+		return c.Variants[0], fmt.Errorf("tag field `%s` was empty", c.TagField)
 	}
 
 	for _, obj := range c.Variants {
-		if obj.Type() == tagValue {
+		if obj.Variant() == tagValue {
+			// TODO is there a way around using reflect?
 			objT := reflect.TypeOf(obj)
 			pv := reflect.New(objT)
 			if err := json.Unmarshal([]byte(jRes.Raw), pv.Interface()); err != nil {
