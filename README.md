@@ -1,6 +1,6 @@
 # pjson
 
-Help to unmarshal tagged unions in go
+Help to easily JSON marshal / unmarshal tagged unions in go
 
 tldr: allows you to do this
 
