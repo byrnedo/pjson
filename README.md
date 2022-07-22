@@ -2,6 +2,22 @@
 
 Help to unmarshal tagged unions in go
 
+tldr: allows you to do this
+```go
+type MyFaces []MyInterface
+
+func (f MyFaces) MarshalJSON() ([]byte, error) {
+	return pjson.New(MyFaces{}).MarshalArray(f)
+}
+
+func (f *MyFaces) UnmarshalJSON(bytes []byte) (err error) {
+	*f, err = pjson.New(MyFaces{VariantA{}, VariantB{}}).UnmarshalArray(bytes)
+	return
+}
+```
+
+Expanded:
+
 ```go
 package main
 
