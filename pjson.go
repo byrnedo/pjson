@@ -80,11 +80,11 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 	}
 	variantRes := jRes.Get(c.VariantField)
 	if !variantRes.Exists() {
-		return c.Variants[0], fmt.Errorf("failed to find variant field `%s` in json object", c.VariantField)
+		return c.Variants[0], fmt.Errorf("failed to find variant field '%s' in json object", c.VariantField)
 	}
 	variantValue := strings.TrimSpace(variantRes.String())
 	if variantValue == "" {
-		return c.Variants[0], fmt.Errorf("variant field `%s` was empty", c.VariantField)
+		return c.Variants[0], fmt.Errorf("variant field '%s' was empty", c.VariantField)
 	}
 
 	for _, obj := range c.Variants {
