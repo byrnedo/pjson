@@ -1,8 +1,10 @@
-package pjson
+package pjson_test
 
 import (
 	"reflect"
 	"testing"
+
+	"github.com/byrnedo/pjson"
 )
 
 type ABFace interface {
@@ -26,20 +28,32 @@ func (b B) Variant() string {
 }
 
 func TestArray(t *testing.T) {
-	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "b", "b": "BBB"}]`)
-	items, err := New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
+	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "a", "a": "AAA1"},{"type": "b", "b": "BBB"}]`)
+	items, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
 
+	if len(items) != 3 {
+		t.Fatalf("got %d, wanted 3", len(items))
+	}
+
 	t.Log(items)
-	t.Log(reflect.TypeOf(items[0]))
-	t.Log(reflect.TypeOf(items[1]))
+
+	if reflect.TypeOf(items[0]) != reflect.TypeOf(A{}) {
+		t.Fatal("wrong type")
+	}
+	if reflect.TypeOf(items[1]) != reflect.TypeOf(A{}) {
+		t.Fatal("wrong type")
+	}
+	if reflect.TypeOf(items[2]) != reflect.TypeOf(B{}) {
+		t.Fatal("wrong type")
+	}
 }
 
 func TestObjectHappy(t *testing.T) {
-	bytes := []byte(`{"type": "a", "a": "AAA"}`)
-	item, err := New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
+	bytes := []byte(`{"type": "b", "b": "BBB"}`)
+	item, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -49,7 +63,7 @@ func TestObjectHappy(t *testing.T) {
 }
 func TestObjectNoTagMatch(t *testing.T) {
 	bytes := []byte(`{"type": "x"}`)
-	_, err := New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
+	_, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -59,7 +73,7 @@ func TestObjectNoTagMatch(t *testing.T) {
 
 func TestArrayNotArray(t *testing.T) {
 	bytes := []byte(`{"type": "a"}`)
-	_, err := New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
+	_, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -69,7 +83,7 @@ func TestArrayNotArray(t *testing.T) {
 
 func TestObjectNotObject(t *testing.T) {
 	bytes := []byte(`[{"type": "a"}]`)
-	_, err := New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
+	_, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}

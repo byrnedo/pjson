@@ -13,7 +13,9 @@ const (
 	DefaultTagField = "type"
 )
 
-type Variant interface{ Variant() string }
+type Variant interface {
+	Variant() string
+}
 
 type Pjson[T Variant] struct {
 	TagField string
