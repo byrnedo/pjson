@@ -2,6 +2,7 @@ package pjson
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
 	"strings"
@@ -19,18 +20,36 @@ type Variant interface {
 }
 
 type Options struct {
-	VariantField string
+	VariantField         string // which json field is used to indicate variant, defaults to DefaultVariantField ( "type" )
+	IgnoreUnknownVariant bool   // will not return error if trying to unmarshal an unknown variant
 }
 
-type Pjson[T Variant] struct {
+type Unmarshaler[T Variant] struct {
 	Options
 	Variants []T
 }
 
+type Marshaler[T Variant] struct {
+	Options
+}
+
 type OptionFn func(p *Options)
 
-func New[T Variant](variants []T, options ...OptionFn) Pjson[T] {
-	pj := Pjson[T]{
+func NewMarshaler[T Variant](options ...OptionFn) Marshaler[T] {
+
+	pj := Marshaler[T]{
+		Options: Options{
+			VariantField: DefaultVariantField,
+		},
+	}
+	for _, optFn := range options {
+		optFn(&pj.Options)
+	}
+	return pj
+}
+
+func NewUnmarshaler[T Variant](variants []T, options ...OptionFn) Unmarshaler[T] {
+	pj := Unmarshaler[T]{
 		Options: Options{
 			VariantField: DefaultVariantField,
 		},
@@ -48,7 +67,13 @@ func WithVariantField(name string) OptionFn {
 	}
 }
 
-func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
+func WithIgnoreUnknownVariants(yes bool) OptionFn {
+	return func(p *Options) {
+		p.IgnoreUnknownVariant = yes
+	}
+}
+
+func (c Unmarshaler[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
 
 	gj := gjson.ParseBytes(bytes)
 	if !gj.IsArray() {
@@ -59,6 +84,9 @@ func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
 
 		item, err := c.unmarshalObjectGjson(jRes)
 		if err != nil {
+			if c.IgnoreUnknownVariant && errors.Is(err, UnknownVariantErr{}) {
+				continue
+			}
 			return nil, fmt.Errorf("[%d]: %w", i, err)
 		}
 		items = append(items, item)
@@ -67,7 +95,15 @@ func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
 	return
 }
 
-func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
+type UnknownVariantErr struct {
+	Variant string
+}
+
+func (ue UnknownVariantErr) Error() string {
+	return fmt.Sprintf("no variant matched type '%s'", ue.Variant)
+}
+
+func (c Unmarshaler[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 
 	if !jRes.IsObject() {
 		jType := jRes.Type.String()
@@ -99,15 +135,15 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 		}
 	}
 
-	return c.Variants[0], fmt.Errorf("no variant matched type '%s'", variantValue)
+	return c.Variants[0], UnknownVariantErr{Variant: variantValue}
 }
 
-func (c Pjson[T]) UnmarshalObject(bytes []byte) (T, error) {
+func (c Unmarshaler[T]) UnmarshalObject(bytes []byte) (T, error) {
 	gj := gjson.ParseBytes(bytes)
 	return c.unmarshalObjectGjson(gj)
 }
 
-func (c Pjson[T]) MarshalArray(items []T) (bytes []byte, err error) {
+func (c Marshaler[T]) MarshalArray(items []T) (bytes []byte, err error) {
 	var singleObjBytes []string
 	for i, item := range items {
 		b, err := c.MarshalObject(item)
@@ -119,7 +155,7 @@ func (c Pjson[T]) MarshalArray(items []T) (bytes []byte, err error) {
 	return []byte("[" + strings.Join(singleObjBytes, ",") + "]"), nil
 }
 
-func (c Pjson[T]) MarshalObject(item T) (bytes []byte, err error) {
+func (c Marshaler[T]) MarshalObject(item T) (bytes []byte, err error) {
 
 	variant := item.Variant()
 

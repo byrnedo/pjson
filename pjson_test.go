@@ -30,7 +30,7 @@ func (b B) Variant() string {
 
 func TestArray(t *testing.T) {
 	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "a", "a": "AAA1"},{"type": "b", "b": "BBB"}]`)
-	items, err := pjson.New([]ABFace{A{}, B{}}, pjson.WithVariantField("type")).UnmarshalArray(bytes)
+	items, err := pjson.NewUnmarshaler([]ABFace{A{}, B{}}, pjson.WithVariantField("type")).UnmarshalArray(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -54,7 +54,7 @@ func TestArray(t *testing.T) {
 
 func TestObjectHappy(t *testing.T) {
 	bytes := []byte(`{"type": "b", "b": "BBB"}`)
-	item, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
+	item, err := pjson.NewUnmarshaler([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestObjectHappy(t *testing.T) {
 }
 func TestObjectNoTagMatch(t *testing.T) {
 	bytes := []byte(`{"type": "x"}`)
-	_, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
+	_, err := pjson.NewUnmarshaler([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -74,7 +74,7 @@ func TestObjectNoTagMatch(t *testing.T) {
 
 func TestArrayNotArray(t *testing.T) {
 	bytes := []byte(`{"type": "a"}`)
-	_, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
+	_, err := pjson.NewUnmarshaler([]ABFace{A{}, B{}}).UnmarshalArray(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -84,7 +84,7 @@ func TestArrayNotArray(t *testing.T) {
 
 func TestObjectNotObject(t *testing.T) {
 	bytes := []byte(`[{"type": "a"}]`)
-	_, err := pjson.New([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
+	_, err := pjson.NewUnmarshaler([]ABFace{A{}, B{}}).UnmarshalObject(bytes)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -93,7 +93,7 @@ func TestObjectNotObject(t *testing.T) {
 }
 
 func TestPjson_MarshalObject(t *testing.T) {
-	b, err := pjson.New([]ABFace{}).MarshalObject(A{A: "AAA"})
+	b, err := pjson.NewMarshaler[ABFace]().MarshalObject(A{A: "AAA"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -104,7 +104,7 @@ func TestPjson_MarshalObject(t *testing.T) {
 }
 
 func TestPjson_MarshalArray(t *testing.T) {
-	b, err := pjson.New([]ABFace{}).MarshalArray([]ABFace{A{A: "AA0"}, A{A: "AA1"}, A{A: "AA2"}, B{B: "BB0"}})
+	b, err := pjson.NewMarshaler[ABFace]().MarshalArray([]ABFace{A{A: "AA0"}, A{A: "AA1"}, A{A: "AA2"}, B{B: "BB0"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -117,11 +117,11 @@ func TestPjson_MarshalArray(t *testing.T) {
 type ABFaces []ABFace
 
 func (f ABFaces) MarshalJSON() ([]byte, error) {
-	return pjson.New(ABFaces{}).MarshalArray(f)
+	return pjson.NewMarshaler[ABFace]().MarshalArray(f)
 }
 
 func (f *ABFaces) UnmarshalJSON(bytes []byte) (err error) {
-	*f, err = pjson.New(ABFaces{A{}, B{}}).UnmarshalArray(bytes)
+	*f, err = pjson.NewUnmarshaler(ABFaces{A{}, B{}}).UnmarshalArray(bytes)
 	return
 }
 
