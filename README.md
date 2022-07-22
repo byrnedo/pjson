@@ -5,15 +5,22 @@ Help to unmarshal tagged unions in go
 tldr: allows you to do this
 
 ```go
+package foo
+
+import (
+	"github.com/byrnedo/pjson"
+	"encoding/json"
+)
+
 type MyFaces []MyInterface
 
 func (f MyFaces) MarshalJSON() ([]byte, error) {
-return pjson.New(MyFaces{}).MarshalArray(f)
+	return pjson.New(MyFaces{}).MarshalArray(f)
 }
 
 func (f *MyFaces) UnmarshalJSON(bytes []byte) (err error) {
-*f, err = pjson.New(MyFaces{VariantA{}, VariantB{}}).UnmarshalArray(bytes)
-return
+	*f, err = pjson.New(MyFaces{VariantA{}, VariantB{}}).UnmarshalArray(bytes)
+	return
 }
 ```
 
