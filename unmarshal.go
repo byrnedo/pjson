@@ -63,28 +63,28 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 		}
 		return c.Variants[0], fmt.Errorf("did not hold an Object, was %s", jType)
 	}
-	tagRes := jRes.Get(c.tagField())
-	if !tagRes.Exists() {
-		return c.Variants[0], fmt.Errorf("failed to find tag field `%s` in json object", c.TagField)
+	variantRes := jRes.Get(c.tagField())
+	if !variantRes.Exists() {
+		return c.Variants[0], fmt.Errorf("failed to find variant field `%s` in json object", c.TagField)
 	}
-	tagValue := strings.TrimSpace(tagRes.String())
-	if tagValue == "" {
-		return c.Variants[0], fmt.Errorf("tag field `%s` was empty", c.TagField)
+	variantValue := strings.TrimSpace(variantRes.String())
+	if variantValue == "" {
+		return c.Variants[0], fmt.Errorf("variant field `%s` was empty", c.TagField)
 	}
 
 	for _, obj := range c.Variants {
-		if obj.Variant() == tagValue {
+		if obj.Variant() == variantValue {
 			// TODO is there a way around using reflect?
 			objT := reflect.TypeOf(obj)
 			pv := reflect.New(objT)
 			if err := json.Unmarshal([]byte(jRes.Raw), pv.Interface()); err != nil {
-				return c.Variants[0], fmt.Errorf("failed to unmarshal variant '%s': %w", tagValue, err)
+				return c.Variants[0], fmt.Errorf("failed to unmarshal variant '%s': %w", variantValue, err)
 			}
 			return pv.Elem().Interface().(T), nil
 		}
 	}
 
-	return c.Variants[0], fmt.Errorf("no variant matched type '%s'", tagValue)
+	return c.Variants[0], fmt.Errorf("no variant matched type '%s'", variantValue)
 }
 
 func (c Pjson[T]) UnmarshalObject(bytes []byte) (T, error) {
