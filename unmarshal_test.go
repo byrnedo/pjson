@@ -29,7 +29,7 @@ func (b B) Variant() string {
 
 func TestArray(t *testing.T) {
 	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "a", "a": "AAA1"},{"type": "b", "b": "BBB"}]`)
-	items, err := pjson.New([]ABFace{A{}, B{}}, pjson.WithTagField("type")).UnmarshalArray(bytes)
+	items, err := pjson.New([]ABFace{A{}, B{}}, pjson.WithVariantField("type")).UnmarshalArray(bytes)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultTagField = "type"
+	DefaultVariantField = "type"
 )
 
 type Variant interface {
@@ -18,7 +18,7 @@ type Variant interface {
 }
 
 type Options struct {
-	TagField string
+	VariantField string
 }
 
 type Pjson[T Variant] struct {
@@ -31,7 +31,7 @@ type OptionFn func(p *Options)
 func New[T Variant](variants []T, options ...OptionFn) Pjson[T] {
 	pj := Pjson[T]{
 		Options: Options{
-			TagField: DefaultTagField,
+			VariantField: DefaultVariantField,
 		},
 		Variants: variants,
 	}
@@ -41,9 +41,9 @@ func New[T Variant](variants []T, options ...OptionFn) Pjson[T] {
 	return pj
 }
 
-func WithTagField(name string) OptionFn {
+func WithVariantField(name string) OptionFn {
 	return func(p *Options) {
-		p.TagField = name
+		p.VariantField = name
 	}
 }
 
@@ -77,13 +77,13 @@ func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 		}
 		return c.Variants[0], fmt.Errorf("did not hold an Object, was %s", jType)
 	}
-	variantRes := jRes.Get(c.TagField)
+	variantRes := jRes.Get(c.VariantField)
 	if !variantRes.Exists() {
-		return c.Variants[0], fmt.Errorf("failed to find variant field `%s` in json object", c.TagField)
+		return c.Variants[0], fmt.Errorf("failed to find variant field `%s` in json object", c.VariantField)
 	}
 	variantValue := strings.TrimSpace(variantRes.String())
 	if variantValue == "" {
-		return c.Variants[0], fmt.Errorf("variant field `%s` was empty", c.TagField)
+		return c.Variants[0], fmt.Errorf("variant field `%s` was empty", c.VariantField)
 	}
 
 	for _, obj := range c.Variants {
