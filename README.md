@@ -1,5 +1,7 @@
 # pjson
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/byrnedo/pjson.svg)](https://pkg.go.dev/github.com/byrnedo/pjson)
+
 Help to easily JSON marshal / unmarshal tagged unions in go
 
 tldr: allows you to do this
