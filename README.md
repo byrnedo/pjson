@@ -3,20 +3,21 @@
 Help to unmarshal tagged unions in go
 
 tldr: allows you to do this
+
 ```go
 type MyFaces []MyInterface
 
 func (f MyFaces) MarshalJSON() ([]byte, error) {
-	return pjson.New(MyFaces{}).MarshalArray(f)
+return pjson.New(MyFaces{}).MarshalArray(f)
 }
 
 func (f *MyFaces) UnmarshalJSON(bytes []byte) (err error) {
-	*f, err = pjson.New(MyFaces{VariantA{}, VariantB{}}).UnmarshalArray(bytes)
-	return
+*f, err = pjson.New(MyFaces{VariantA{}, VariantB{}}).UnmarshalArray(bytes)
+return
 }
 ```
 
-Expanded:
+Expanded ([run it on goplay](https://go.dev/play/p/jHqZ-TnXq-e)):
 
 ```go
 package main
@@ -86,7 +87,7 @@ func asField() {
 	c := customStruct{
 		Field1: "field1",
 		Field2: 1,
-		Slice:  MyFaces{A{}, B{}, A{}},
+		Slice:  MyFaces{A{A: "A1"}, B{B: "B1"}, A{A: "A2"}},
 	}
 	b, _ := json.Marshal(c)
 	fmt.Println(string(b))
