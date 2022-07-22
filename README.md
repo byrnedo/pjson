@@ -4,27 +4,18 @@
 
 Help to easily JSON marshal / unmarshal tagged unions in go
 
-tldr: allows you to do this
-
-```go
-package foo
-
-import (
-	"github.com/byrnedo/pjson"
-	"encoding/json"
-)
-
-type MyFaces []MyInterface
-
-func (f MyFaces) MarshalJSON() ([]byte, error) {
-	return pjson.New(MyFaces{}).MarshalArray(f)
-}
-
-func (f *MyFaces) UnmarshalJSON(bytes []byte) (err error) {
-	*f, err = pjson.New(MyFaces{VariantA{}, VariantB{}}).UnmarshalArray(bytes)
-	return
-}
+A tagged union / discriminating type is, for instance with the following JSON:
+```json
+[
+    { "type": "a", "a_name": "AName", "a_foo": "FOO" },
+    { "type": "b", "b_name": "BName", "b_goo": "GOO" }
+]
 ```
+
+The `type` field denotes which type the object is. So many object share a common discriminating field.
+In some languages this is supported, but not in go.
+
+This is a helper to create these pseudo tagged unions that can be serialized and deserialized to and from JSON.
 
 ## Getting started
 
