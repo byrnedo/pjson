@@ -106,13 +106,13 @@ You can then marshal either an object or a slice of object.
 To Marshal an Object:
 ```go
 bytes, err := pj.MarshalObject(B{})
-// bytes has '{"type": "b" ...}"
+// bytes has '{"type": "b" ...}'
 ```
 
 To Marshal an Array (slice really, it's called Array to conform to UnmarshalArray):
 ```go
 bytes, err := pj.MarshalArray([]MyFace{B{},A{}})
-// bytes has '[{"type": "b" ...}{"type":"a", ...}]"
+// bytes has '[{"type": "b" ...}{"type":"a", ...}]'
 ```
 
 The only thing special that the `Marshal` methods do is to add the variant field so you don't have to have that as a struct field.
