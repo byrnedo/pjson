@@ -40,8 +40,8 @@ func main() {
 	}
 	fmt.Println(items)
 
-	bytes = []byte(`{"type": "a", "a": "AAA"}`)
-	item, err := pjson.New([]MyFace{A{}, B{}}).UnmarshalObject(bytes)
+	bytes = []byte(`{"tag": "a", "a": "AAA"}`)
+	item, err := pjson.New([]MyFace{A{}, B{}}, pjson.WithVariantField("tag")).UnmarshalObject(bytes)
 	if err != nil {
 		panic(err)
 	}
