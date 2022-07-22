@@ -113,3 +113,58 @@ func TestPjson_MarshalArray(t *testing.T) {
 	}
 	t.Log(string(b))
 }
+
+type ABFaces []ABFace
+
+func (f ABFaces) MarshalJSON() ([]byte, error) {
+	return pjson.New(ABFaces{}).MarshalArray(f)
+}
+
+func (f *ABFaces) UnmarshalJSON(bytes []byte) (err error) {
+	*f, err = pjson.New(ABFaces{A{}, B{}}).UnmarshalArray(bytes)
+	return
+}
+
+type SuperObject struct {
+	FieldA string  `json:"field_a"`
+	FieldB int     `json:"field_b"`
+	Slice  ABFaces `json:"slice"`
+}
+
+func TestSuperObject(t *testing.T) {
+
+	s := SuperObject{
+		FieldA: "A",
+		FieldB: 1,
+		Slice:  []ABFace{A{}, A{}, B{}},
+	}
+
+	b, err := json.Marshal(s)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(b))
+	if string(b) != `{"field_a":"A","field_b":1,"slice":[{"a":"","type":"a"},{"a":"","type":"a"},{"b":"","type":"b"}]}` {
+		t.Fatal(string(b))
+	}
+
+	s2 := SuperObject{}
+
+	err = json.Unmarshal([]byte(`{"field_a":"A","field_b":1,"slice":[{"a":"AA1","type":"a"},{"a":"AA2","type":"a"},{"b":"BB1","type":"b"}]}`), &s2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(s2)
+	if len(s2.Slice) != 3 {
+		t.Fatal("not 3 elems")
+	}
+
+	if reflect.TypeOf(s2.Slice[0]) != reflect.TypeOf(A{}) {
+		t.Fatal("wrong type")
+	}
+
+	if reflect.TypeOf(s2.Slice[2]) != reflect.TypeOf(B{}) {
+		t.Fatal("wrong type")
+	}
+
+}
