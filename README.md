@@ -28,6 +28,7 @@ You need to declare and interface for your tagged type. That interface must impl
 Then create structs implementing `Variant`, returning their tag value.
 
 ```go
+// Note it's not a must to have this interface, you can just use pjson.Variant directly
 type MyFace interface {
 	Variant() string
 }
