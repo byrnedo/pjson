@@ -1,6 +1,9 @@
 # pjson
 
 [![Go Reference](https://pkg.go.dev/badge/github.com/byrnedo/pjson.svg)](https://pkg.go.dev/github.com/byrnedo/pjson)
+[![Go Coverage](https://github.com/byrnedo/pjson/wiki/coverage.svg)](https://raw.githack.com/wiki/byrnedo/pjson/coverage.html)
+
+
 
 Help to easily JSON marshal / unmarshal tagged unions in go
 
