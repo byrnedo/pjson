@@ -147,10 +147,10 @@ func TestSuperObject(t *testing.T) {
 
 }
 
-func BenchmarkMarshal(b *testing.B) {
+func Benchmark(b *testing.B) {
 
 	bytes := []byte(`{"type": "a", "a": "AAAA", "a_one": 1, "a_two": "two"}`)
-	b.Run("with pjson", func(b *testing.B) {
+	b.Run("unmarshal with pjson", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 
 			f := pjson.Tagged[ABDisc]{}
@@ -162,11 +162,35 @@ func BenchmarkMarshal(b *testing.B) {
 		}
 	})
 
-	b.Run("without pjson", func(b *testing.B) {
+	b.Run("unmarshal without pjson", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 
 			a := A{}
 			err := json.Unmarshal(bytes, &a)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+		}
+	})
+
+	b.Run("marshal with pjson", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+
+			f := pjson.Tagged[ABDisc]{Value: A{}}
+			_, err := json.Marshal(f)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+		}
+	})
+
+	b.Run("marshal without pjson", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+
+			a := A{}
+			_, err := json.Marshal(a)
 			if err != nil {
 				b.Fatal(err)
 			}

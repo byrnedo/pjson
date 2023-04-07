@@ -3,22 +3,30 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/byrnedo/pjson.svg)](https://pkg.go.dev/github.com/byrnedo/pjson)
 [![Go Coverage](https://github.com/byrnedo/pjson/wiki/coverage.svg)](https://raw.githack.com/wiki/byrnedo/pjson/coverage.html)
 
-
-
 Help to easily JSON marshal / unmarshal tagged unions in go
 
 A tagged union / discriminating type is, for instance with the following JSON:
+
 ```json
 [
-    { "type": "a", "a_name": "AName", "a_foo": "FOO" },
-    { "type": "b", "b_name": "BName", "b_goo": "GOO" }
+  {
+    "type": "a",
+    "a_name": "AName",
+    "a_foo": "FOO"
+  },
+  {
+    "type": "b",
+    "b_name": "BName",
+    "b_goo": "GOO"
+  }
 ]
 ```
 
 The `type` field denotes which type the object is. So many object share a common discriminating field.
 In some languages this is supported, but not in go.
 
-**Pjson** gives us a helper `pjson.Tagged` type to create these pseudo tagged unions that can be automatically serialized and deserialized to and from JSON.
+**Pjson** gives us a helper `pjson.Tagged` type to create these pseudo tagged unions that can be automatically
+serialized and deserialized to and from JSON.
 
 ## Usage
 
@@ -29,7 +37,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"reflect"
-	
+
 	"github.com/byrnedo/pjson"
 )
 
@@ -80,4 +88,19 @@ func ExampleReadme() {
 	// Output: *pjson_test.Foo &{AAAA}
 	// {"a":"AAAA","type":"foo"}
 }
+```
+
+## Benchmarks
+
+Macbook Pro M1 2022
+
+```
+Benchmark/unmarshal_with_pjson
+Benchmark/unmarshal_with_pjson-10         	  867177	      1356 ns/op
+Benchmark/unmarshal_without_pjson
+Benchmark/unmarshal_without_pjson-10      	 1793629	       670.6 ns/op
+Benchmark/marshal_with_pjson
+Benchmark/marshal_with_pjson-10           	 2415705	       488.7 ns/op
+Benchmark/marshal_without_pjson
+Benchmark/marshal_without_pjson-10        	10956252	       109.8 ns/op
 ```
