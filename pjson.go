@@ -3,11 +3,9 @@ package pjson
 import (
 	"encoding/json"
 	"fmt"
-	"reflect"
-	"strings"
-
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
+	"reflect"
 )
 
 type Variant interface {
@@ -44,7 +42,6 @@ func (o *Tagged[T]) UnmarshalJSON(bytes []byte) error {
 
 	jRes := gjson.ParseBytes(bytes)
 
-	variants := o.d.Variants()
 	if !jRes.IsObject() {
 		return fmt.Errorf("did not hold an Object")
 	}
@@ -53,28 +50,27 @@ func (o *Tagged[T]) UnmarshalJSON(bytes []byte) error {
 	if !variantRes.Exists() {
 		return fmt.Errorf("failed to find variant field '%s' in json object", o.d.Field())
 	}
-	variantValue := strings.TrimSpace(variantRes.String())
+	variantValue := variantRes.String()
 	if variantValue == "" {
 		return fmt.Errorf("variant field '%s' was empty", o.d.Field())
 	}
 
-	for _, obj := range variants {
+	for _, obj := range o.d.Variants() {
 		if obj.Variant() != variantValue {
 			continue
 		}
 
 		t := reflect.TypeOf(obj)
-		dest := obj
 		// a pointer works just fine, but if it's not we need to get one
 		if t.Kind() != reflect.Pointer {
-			dest = reflect.New(t).Interface().(Variant)
+			obj = reflect.New(t).Interface().(Variant)
 		}
 
-		if err := json.Unmarshal([]byte(jRes.Raw), &dest); err != nil {
+		if err := json.Unmarshal([]byte(jRes.Raw), &obj); err != nil {
 			return fmt.Errorf("failed to unmarshal variant '%s': %w", variantValue, err)
 		}
 
-		o.Value = dest
+		o.Value = obj
 		return nil
 	}
 

@@ -155,7 +155,6 @@ func BenchmarkMarshal(b *testing.B) {
 
 			f := pjson.Tagged[ABDisc]{}
 			err := json.Unmarshal(bytes, &f)
-			b.Log(f.Value)
 			if err != nil {
 				b.Fatal(err)
 			}
