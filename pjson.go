@@ -10,119 +10,69 @@ import (
 	"github.com/tidwall/sjson"
 )
 
-const (
-	DefaultVariantField = "type"
-)
-
 type Variant interface {
 	Variant() string
 }
 
-type Options struct {
-	VariantField string
+type Discriminator interface {
+	Field() string
+	Variants() []Variant
+}
+type Tagged[T Discriminator] struct {
+	d     T
+	Value Variant
 }
 
-type Pjson[T Variant] struct {
-	Options
-	Variants []T
-}
-
-type OptionFn func(p *Options)
-
-func New[T Variant](variants []T, options ...OptionFn) Pjson[T] {
-
-	pj := Pjson[T]{
-		Options: Options{
-			VariantField: DefaultVariantField,
-		},
-		Variants: variants,
+func (o Tagged[T]) MarshalJSON() ([]byte, error) {
+	if o.Value == nil {
+		return json.Marshal(o.Value)
 	}
-	for _, optFn := range options {
-		optFn(&pj.Options)
-	}
-	return pj
-}
+	variant := o.Value.Variant()
 
-func WithVariantField(name string) OptionFn {
-	return func(p *Options) {
-		p.VariantField = name
-	}
-}
-
-func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
-
-	gj := gjson.ParseBytes(bytes)
-	if !gj.IsArray() {
-		return nil, fmt.Errorf("bytes did not hold an array")
-	}
-	results := gj.Array()
-	for i, jRes := range results {
-
-		item, err := c.unmarshalObjectGjson(jRes)
-		if err != nil {
-			return nil, fmt.Errorf("[%d]: %w", i, err)
-		}
-		items = append(items, item)
-
-	}
-	return
-}
-
-func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
-
-	if !jRes.IsObject() {
-		return c.Variants[0], fmt.Errorf("did not hold an Object")
-	}
-
-	variantRes := jRes.Get(c.VariantField)
-	if !variantRes.Exists() {
-		return c.Variants[0], fmt.Errorf("failed to find variant field '%s' in json object", c.VariantField)
-	}
-	variantValue := strings.TrimSpace(variantRes.String())
-	if variantValue == "" {
-		return c.Variants[0], fmt.Errorf("variant field '%s' was empty", c.VariantField)
-	}
-
-	for _, obj := range c.Variants {
-		if obj.Variant() == variantValue {
-			// TODO is there a way around using reflect?
-			objT := reflect.TypeOf(obj)
-			pv := reflect.New(objT)
-			if err := json.Unmarshal([]byte(jRes.Raw), pv.Interface()); err != nil {
-				return c.Variants[0], fmt.Errorf("failed to unmarshal variant '%s': %w", variantValue, err)
-			}
-			return pv.Elem().Interface().(T), nil
-		}
-	}
-
-	return c.Variants[0], fmt.Errorf("no variant matched type '%s'", variantValue)
-}
-
-func (c Pjson[T]) UnmarshalObject(bytes []byte) (T, error) {
-	gj := gjson.ParseBytes(bytes)
-	return c.unmarshalObjectGjson(gj)
-}
-
-func (c Pjson[T]) MarshalArray(items []T) (bytes []byte, err error) {
-	var singleObjBytes []string
-	for i, item := range items {
-		b, err := c.MarshalObject(item)
-		if err != nil {
-			return nil, fmt.Errorf("failed to marshal items[%d]: %w", i, err)
-		}
-		singleObjBytes = append(singleObjBytes, string(b))
-	}
-	return []byte("[" + strings.Join(singleObjBytes, ",") + "]"), nil
-}
-
-func (c Pjson[T]) MarshalObject(item T) (bytes []byte, err error) {
-
-	variant := item.Variant()
-
-	b, err := json.Marshal(item)
+	b, err := json.Marshal(o.Value)
 	if err != nil {
 		return nil, err
 	}
 
-	return sjson.SetBytes(b, c.VariantField, variant)
+	return sjson.SetBytes(b, o.d.Field(), variant)
+}
+func (o *Tagged[T]) UnmarshalJSON(bytes []byte) error {
+
+	jRes := gjson.ParseBytes(bytes)
+
+	variants := o.d.Variants()
+	if !jRes.IsObject() {
+		return fmt.Errorf("did not hold an Object")
+	}
+
+	variantRes := jRes.Get(o.d.Field())
+	if !variantRes.Exists() {
+		return fmt.Errorf("failed to find variant field '%s' in json object", o.d.Field())
+	}
+	variantValue := strings.TrimSpace(variantRes.String())
+	if variantValue == "" {
+		return fmt.Errorf("variant field '%s' was empty", o.d.Field())
+	}
+
+	for _, obj := range variants {
+		if obj.Variant() != variantValue {
+			continue
+		}
+
+		t := reflect.TypeOf(obj)
+		dest := obj
+		// a pointer works just fine, but if it's not we need to get one
+		if t.Kind() != reflect.Pointer {
+			dest = reflect.New(t).Interface().(Variant)
+		}
+
+		if err := json.Unmarshal([]byte(jRes.Raw), &dest); err != nil {
+			return fmt.Errorf("failed to unmarshal variant '%s': %w", variantValue, err)
+		}
+
+		o.Value = dest
+		return nil
+	}
+
+	return fmt.Errorf("no variant matched type '%s'", variantValue)
 }

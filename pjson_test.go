@@ -2,11 +2,21 @@ package pjson_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/byrnedo/pjson"
 )
+
+type ABDisc struct{}
+
+func (ab ABDisc) Field() string {
+	return "type"
+}
+func (ab ABDisc) Variants() []pjson.Variant {
+	return []pjson.Variant{A{}, B{}}
+}
 
 type A struct {
 	A    string `json:"a"`
@@ -28,43 +38,11 @@ func (b B) Variant() string {
 	return "b"
 }
 
-func TestArray(t *testing.T) {
-	bytes := []byte(`[{"type": "a", "a": "AAA"},{"type": "a", "a": "AAA1"},{"type": "b", "b": "BBB"}]`)
-	items, err := pjson.New([]pjson.Variant{A{}, B{}}, pjson.WithVariantField("type")).UnmarshalArray(bytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(items) != 3 {
-		t.Fatalf("got %d, wanted 3", len(items))
-	}
-
-	t.Log(items)
-
-	if reflect.TypeOf(items[0]) != reflect.TypeOf(A{}) {
-		t.Fatal("wrong type")
-	}
-	if reflect.TypeOf(items[1]) != reflect.TypeOf(A{}) {
-		t.Fatal("wrong type")
-	}
-	if reflect.TypeOf(items[2]) != reflect.TypeOf(B{}) {
-		t.Fatal("wrong type")
-	}
-}
-
-func TestObjectHappy(t *testing.T) {
-	bytes := []byte(`{"type": "b", "b": "BBB"}`)
-	item, err := pjson.New([]pjson.Variant{A{}, B{}}).UnmarshalObject(bytes)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Log(item)
-	t.Log(reflect.TypeOf(item))
-}
 func TestObjectNoTagMatch(t *testing.T) {
 	bytes := []byte(`{"type": "x"}`)
-	_, err := pjson.New([]pjson.Variant{A{}, B{}}).UnmarshalObject(bytes)
+
+	f := pjson.Tagged[ABDisc]{}
+	err := json.Unmarshal(bytes, &f)
 	if err == nil {
 		t.Fatal("should have error")
 	}
@@ -72,63 +50,44 @@ func TestObjectNoTagMatch(t *testing.T) {
 	t.Log(err)
 }
 
-func TestArrayNotArray(t *testing.T) {
-	bytes := []byte(`{"type": "a"}`)
-	_, err := pjson.New([]pjson.Variant{A{}, B{}}).UnmarshalArray(bytes)
-	if err == nil {
-		t.Fatal("should have error")
-	}
-
-	t.Log(err)
-}
-
+//	func TestArrayNotArray(t *testing.T) {
+//		bytes := []byte(`{"type": "a"}`)
+//		_, err := pjson.New([]pjson.Variant{A{}, B{}}).UnmarshalArray(bytes)
+//		if err == nil {
+//			t.Fatal("should have error")
+//		}
+//
+//		t.Log(err)
+//	}
 func TestObjectNotObject(t *testing.T) {
 	bytes := []byte(`[{"type": "a"}]`)
-	_, err := pjson.New([]pjson.Variant{A{}, B{}}).UnmarshalObject(bytes)
+	f := pjson.Tagged[ABDisc]{}
+	err := json.Unmarshal(bytes, &f)
 	if err == nil {
 		t.Fatal("should have error")
 	}
 
 	t.Log(err)
 }
-
 func TestPjson_MarshalObject(t *testing.T) {
-	b, err := pjson.New([]pjson.Variant{}).MarshalObject(A{A: "AAA"})
+	f := pjson.Tagged[ABDisc]{Value: A{}}
+	b, err := json.Marshal(f)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !json.Valid(b) {
 		t.Fatal("json invalid")
 	}
-	t.Log(string(b))
-}
 
-func TestPjson_MarshalArray(t *testing.T) {
-	b, err := pjson.New([]pjson.Variant{}).MarshalArray([]pjson.Variant{A{A: "AA0"}, A{A: "AA1"}, A{A: "AA2"}, B{B: "BB0"}})
-	if err != nil {
-		t.Fatal(err)
+	if string(b) != "{\"a\":\"\",\"type\":\"a\"}" {
+		t.Fatal(string(b))
 	}
-	if !json.Valid(b) {
-		t.Fatal("json invalid")
-	}
-	t.Log(string(b))
-}
-
-type ABFaces []pjson.Variant
-
-func (f ABFaces) MarshalJSON() ([]byte, error) {
-	return pjson.New(ABFaces{}).MarshalArray(f)
-}
-
-func (f *ABFaces) UnmarshalJSON(bytes []byte) (err error) {
-	*f, err = pjson.New(ABFaces{A{}, B{}}).UnmarshalArray(bytes)
-	return
 }
 
 type SuperObject struct {
-	FieldA string  `json:"field_a"`
-	FieldB int     `json:"field_b"`
-	Slice  ABFaces `json:"slice"`
+	FieldA string                 `json:"field_a"`
+	FieldB int                    `json:"field_b"`
+	Slice  []pjson.Tagged[ABDisc] `json:"slice"`
 }
 
 func TestSuperObject(t *testing.T) {
@@ -136,7 +95,7 @@ func TestSuperObject(t *testing.T) {
 	s := SuperObject{
 		FieldA: "A",
 		FieldB: 1,
-		Slice:  []pjson.Variant{A{}, A{}, B{}},
+		Slice:  []pjson.Tagged[ABDisc]{{Value: A{}}, {Value: A{}}, {Value: B{}}},
 	}
 
 	b, err := json.Marshal(s)
@@ -159,35 +118,14 @@ func TestSuperObject(t *testing.T) {
 		t.Fatal("not 3 elems")
 	}
 
-	if reflect.TypeOf(s2.Slice[0]) != reflect.TypeOf(A{}) {
+	if reflect.TypeOf(s2.Slice[0].Value) != reflect.TypeOf(&A{}) {
 		t.Fatal("wrong type")
 	}
 
-	if reflect.TypeOf(s2.Slice[2]) != reflect.TypeOf(B{}) {
+	if reflect.TypeOf(s2.Slice[2].Value) != reflect.TypeOf(&B{}) {
 		t.Fatal("wrong type")
 	}
 
-}
-
-type Foo struct {
-	pjson.Variant
-}
-
-func (f Foo) Variants() []pjson.Variant {
-	return []pjson.Variant{
-		A{}, B{},
-	}
-}
-
-var fooPjson = pjson.New(Foo{}.Variants())
-
-func (f *Foo) UnmarshalJSON(bytes []byte) error {
-	v, err := fooPjson.UnmarshalObject(bytes)
-	if err != nil {
-		return err
-	}
-	f.Variant = v
-	return nil
 }
 
 func BenchmarkMarshal(b *testing.B) {
@@ -196,8 +134,9 @@ func BenchmarkMarshal(b *testing.B) {
 	b.Run("with pjson", func(b *testing.B) {
 		for i := 0; i < b.N; i++ {
 
-			f := Foo{}
+			f := pjson.Tagged[ABDisc]{}
 			err := json.Unmarshal(bytes, &f)
+			b.Log(f.Value)
 			if err != nil {
 				b.Fatal(err)
 			}
@@ -216,4 +155,53 @@ func BenchmarkMarshal(b *testing.B) {
 
 		}
 	})
+}
+
+type Foo struct {
+	A string `json:"a"`
+}
+
+// set it's tag value
+func (a Foo) Variant() string {
+	return "foo"
+}
+
+type Bar struct {
+	B string `json:"b"`
+}
+
+func (b Bar) Variant() string {
+	return "bar"
+}
+
+// specify the union
+type FooBarUnion struct{}
+
+func (u FooBarUnion) Field() string { return "type" }
+
+func (u FooBarUnion) Variants() []pjson.Variant {
+	return []pjson.Variant{
+		Foo{}, Bar{},
+	}
+}
+
+func ExampleReadme() {
+	// now that we have our types we can use OneOf
+	o := pjson.Tagged[FooBarUnion]{}
+
+	bytes := []byte(`{"type": "foo", "a": "AAAA"}`)
+
+	err := json.Unmarshal(bytes, &o)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(reflect.TypeOf(o.Value), o.Value)
+
+	bytes, _ = json.Marshal(o)
+	fmt.Println(string(bytes))
+
+	// Output: *pjson_test.Foo &{AAAA}
+	// {"a":"AAAA","type":"foo"}
+
 }
