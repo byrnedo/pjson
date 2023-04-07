@@ -30,6 +30,7 @@ type Pjson[T Variant] struct {
 type OptionFn func(p *Options)
 
 func New[T Variant](variants []T, options ...OptionFn) Pjson[T] {
+
 	pj := Pjson[T]{
 		Options: Options{
 			VariantField: DefaultVariantField,
@@ -70,14 +71,9 @@ func (c Pjson[T]) UnmarshalArray(bytes []byte) (items []T, err error) {
 func (c Pjson[T]) unmarshalObjectGjson(jRes gjson.Result) (T, error) {
 
 	if !jRes.IsObject() {
-		jType := jRes.Type.String()
-		if jType == gjson.JSON.String() {
-			if jRes.IsArray() {
-				jType = "Array"
-			}
-		}
-		return c.Variants[0], fmt.Errorf("did not hold an Object, was %s", jType)
+		return c.Variants[0], fmt.Errorf("did not hold an Object")
 	}
+
 	variantRes := jRes.Get(c.VariantField)
 	if !variantRes.Exists() {
 		return c.Variants[0], fmt.Errorf("failed to find variant field '%s' in json object", c.VariantField)

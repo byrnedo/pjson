@@ -22,16 +22,8 @@ This is a helper to create these pseudo tagged unions that can be serialized and
 
 ## Getting started
 
-
-### Prerequisites
-You need to declare and interface for your tagged type. That interface must implement `Variant() string`.
-Then create structs implementing `Variant`, returning their tag value.
-
 ```go
-// Note it's not a must to have this interface, you can just use pjson.Variant directly
-type MyFace interface {
-	Variant() string
-}
+package foo
 
 type A struct {
 	A string `json:"a"`
@@ -48,6 +40,26 @@ type B struct {
 func (b B) Variant() string {
 	return "b"
 }
+
+type Foo struct {
+	pjson.Variant
+}
+
+func (f Foo) Variants() []pjson.Variant {
+	return []pjson.Variant{
+		A{}, B{},
+	}
+}
+
+func (f *Foo) UnmarshalJSON(bytes []byte) error {
+	v, err := pjson.New(f.Variants()).UnmarshalObject(bytes)
+	if err != nil {
+		return err
+	}
+	f.Variant = v
+	return nil
+}
+
 ```
 
 ### Instantiating

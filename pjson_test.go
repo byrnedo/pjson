@@ -9,7 +9,9 @@ import (
 )
 
 type A struct {
-	A string `json:"a"`
+	A    string `json:"a"`
+	AOne int    `json:"a_one,omitempty"`
+	ATwo string `json:"a_two,omitempty"`
 }
 
 func (a A) Variant() string {
@@ -17,7 +19,9 @@ func (a A) Variant() string {
 }
 
 type B struct {
-	B string `json:"b"`
+	B    string `json:"b"`
+	BOne int    `json:"b_one,omitempty"`
+	BTwo string `json:"b_two,omitempty"`
 }
 
 func (b B) Variant() string {
@@ -163,4 +167,53 @@ func TestSuperObject(t *testing.T) {
 		t.Fatal("wrong type")
 	}
 
+}
+
+type Foo struct {
+	pjson.Variant
+}
+
+func (f Foo) Variants() []pjson.Variant {
+	return []pjson.Variant{
+		A{}, B{},
+	}
+}
+
+var fooPjson = pjson.New(Foo{}.Variants())
+
+func (f *Foo) UnmarshalJSON(bytes []byte) error {
+	v, err := fooPjson.UnmarshalObject(bytes)
+	if err != nil {
+		return err
+	}
+	f.Variant = v
+	return nil
+}
+
+func BenchmarkMarshal(b *testing.B) {
+
+	bytes := []byte(`{"type": "a", "a": "AAAA", "a_one": 1, "a_two": "two"}`)
+	b.Run("with pjson", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+
+			f := Foo{}
+			err := json.Unmarshal(bytes, &f)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+		}
+	})
+
+	b.Run("without pjson", func(b *testing.B) {
+		for i := 0; i < b.N; i++ {
+
+			a := A{}
+			err := json.Unmarshal(bytes, &a)
+			if err != nil {
+				b.Fatal(err)
+			}
+
+		}
+	})
 }
