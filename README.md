@@ -62,7 +62,7 @@ func (u FooBarUnion) Variants() []pjson.Variant {
 }
 
 func ExampleReadme() {
-	// now that we have our types we can use OneOf
+	// now that we have our types we can use Tagged
 	o := pjson.Tagged[FooBarUnion]{}
 
 	bytes := []byte(`{"type": "foo", "a": "AAAA"}`)
