@@ -38,6 +38,10 @@ func (o Tagged[T]) MarshalJSON() ([]byte, error) {
 }
 func (o *Tagged[T]) UnmarshalJSON(bytes []byte) error {
 
+	if len(bytes) == 0 || string(bytes) == "null" {
+		return nil
+	}
+
 	jRes := gjson.ParseBytes(bytes)
 
 	variants := o.d.Variants()

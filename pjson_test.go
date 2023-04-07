@@ -50,6 +50,25 @@ func TestObjectNoTagMatch(t *testing.T) {
 	t.Log(err)
 }
 
+func TestNil(t *testing.T) {
+	bytes := []byte(`null`)
+
+	f := pjson.Tagged[ABDisc]{}
+	err := json.Unmarshal(bytes, &f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.Value != nil {
+		t.Fatal("should be nil")
+	}
+
+	bytes, err = json.Marshal(f)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Log(string(bytes))
+}
+
 //	func TestArrayNotArray(t *testing.T) {
 //		bytes := []byte(`{"type": "a"}`)
 //		_, err := pjson.New([]pjson.Variant{A{}, B{}}).UnmarshalArray(bytes)
