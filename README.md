@@ -1,6 +1,6 @@
 # pjson
 
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)]
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/byrnedo/pjson/blob/master/LICENSE.txt)
 [![Go Reference](https://pkg.go.dev/badge/github.com/byrnedo/pjson.svg)](https://pkg.go.dev/github.com/byrnedo/pjson)
 [![Go Coverage](https://github.com/byrnedo/pjson/wiki/coverage.svg)](https://raw.githack.com/wiki/byrnedo/pjson/coverage.html)
 [![Go Report Card](https://goreportcard.com/badge/github.com/byrnedo/pjson)](https://goreportcard.com/report/github.com/byrnedo/pjson)
